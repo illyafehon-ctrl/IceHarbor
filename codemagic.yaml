@@ -3,11 +3,65 @@ workflows:
     name: IceHarbor Project Check
     instance_type: mac_mini_m2
     max_build_duration: 30
+
     scripts:
       - name: Check Godot project
         script: |
           echo "Checking IceHarbor project..."
-          find . -name project.godot -print
-          test -f project.godot || test -f IceHarbor/project.godot
-          echo "Godot project found!"
-        
+
+          if [ -f project.godot ]; then
+            echo "Godot project found!"
+          elif [ -f IceHarbor/project.godot ]; then
+            echo "Godot project found!"
+          else
+            echo "ERROR: project.godot not found!"
+            exit 1
+          fi
+
+  iceharbor-ios:
+    name: IceHarbor iOS Preparation
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+
+    environment:
+      xcode: latest
+
+    scripts:
+      - name: Find IceHarbor project
+        script: |
+          echo "Finding IceHarbor..."
+
+          if [ -f project.godot ]; then
+            echo "." > /tmp/iceharbor_path
+          elif [ -f IceHarbor/project.godot ]; then
+            echo "IceHarbor" > /tmp/iceharbor_path
+          else
+            echo "ERROR: IceHarbor project not found!"
+            exit 1
+          fi
+
+      - name: Check iOS export configuration
+        script: |
+          PROJECT_DIR=$(cat /tmp/iceharbor_path)
+
+          echo "Checking iOS export configuration..."
+
+          if [ ! -f "$PROJECT_DIR/export_presets.cfg" ]; then
+            echo "ERROR: Missing export_presets.cfg"
+            echo "Configure the iOS export preset in Godot."
+            exit 1
+          fi
+
+          echo "Export configuration found."
+
+      - name: Check Xcode
+        script: |
+          echo "Checking Xcode..."
+          xcodebuild -version
+          echo "Xcode is available."
+
+      - name: Preparation completed
+        script: |
+          echo "IceHarbor preparation checks completed."
+          echo "iOS export and code signing must be configured."
+          echo "No IPA has been generated."
